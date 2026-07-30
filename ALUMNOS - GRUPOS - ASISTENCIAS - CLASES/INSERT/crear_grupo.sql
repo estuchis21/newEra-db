@@ -1,7 +1,7 @@
-CREATE OR REPLACE PROCEDURE crearGrupoYClase(
+CREATE OR REPLACE PROCEDURE crear_grupo_clase(
     p_id_disciplina INTEGER,
     p_id_profesor INTEGER,
-    p_nivel VARCHAR(50),
+    p_nivel VARCHAR,
     p_cupo_max INTEGER,
     p_fecha DATE,
     p_hora_inicio TIME,
@@ -9,10 +9,13 @@ CREATE OR REPLACE PROCEDURE crearGrupoYClase(
 )
 LANGUAGE plpgsql
 AS $$
+
 DECLARE
     v_id_grupo INTEGER;
+
 BEGIN
 
+    -- Insertar grupo
     INSERT INTO grupos(
         id_disciplina,
         id_profesor,
@@ -27,6 +30,8 @@ BEGIN
     )
     RETURNING id_grupo INTO v_id_grupo;
 
+
+    -- Insertar clase relacionada
     INSERT INTO clase(
         id_grupo,
         fecha,
@@ -40,5 +45,11 @@ BEGIN
         p_hora_fin
     );
 
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+
 END;
+
 $$;
