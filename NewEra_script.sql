@@ -46,13 +46,20 @@ CREATE TABLE roles (
 
 CREATE TABLE users (
     id_usuario INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
+
     dni VARCHAR(50) UNIQUE,
-    email VARCHAR(200) UNIQUE NOT NULL,
+
+    email VARCHAR(200) NOT NULL UNIQUE,
+
     contrasena VARCHAR(300) NOT NULL,
-    username VARCHAR(100) UNIQUE NOT NULL,
+
+    username VARCHAR(100) NOT NULL UNIQUE,
+
     celular VARCHAR(20),
+
     id_rol INTEGER NOT NULL,
 
     CONSTRAINT fk_users_rol
@@ -67,7 +74,9 @@ CREATE TABLE users (
 
 CREATE TABLE alumnos (
     id_alumno INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_usuario INTEGER UNIQUE NOT NULL,
+
+    id_usuario INTEGER NOT NULL UNIQUE,
+
     es_menor BOOLEAN NOT NULL DEFAULT FALSE,
 
     CONSTRAINT fk_alumnos_usuario
@@ -82,7 +91,8 @@ CREATE TABLE alumnos (
 
 CREATE TABLE profesores (
     id_profesor INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_usuario INTEGER UNIQUE NOT NULL,
+
+    id_usuario INTEGER NOT NULL UNIQUE,
 
     CONSTRAINT fk_profesores_usuario
         FOREIGN KEY (id_usuario)
@@ -96,6 +106,7 @@ CREATE TABLE profesores (
 
 CREATE TABLE disciplinas (
     id_disciplina INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     disciplina VARCHAR(100) NOT NULL UNIQUE
 );
 
@@ -106,11 +117,19 @@ CREATE TABLE disciplinas (
 
 CREATE TABLE grupos (
     id_grupo INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     id_disciplina INTEGER NOT NULL,
+
     id_profesor INTEGER NOT NULL,
+
     nivel VARCHAR(50) NOT NULL,
-    cupo_max INTEGER NOT NULL CHECK (cupo_max > 0),
+
+    cupo_max INTEGER NOT NULL,
+
     activo BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT chk_grupo_cupo
+        CHECK (cupo_max > 0),
 
     CONSTRAINT fk_grupos_disciplina
         FOREIGN KEY (id_disciplina)
@@ -128,17 +147,21 @@ CREATE TABLE grupos (
 
 CREATE TABLE horario_grupo (
     id_horario INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     id_grupo INTEGER NOT NULL,
+
     dia_semana VARCHAR(20) NOT NULL,
+
     hora_inicio TIME NOT NULL,
+
     hora_fin TIME NOT NULL,
+
+    CONSTRAINT chk_horario
+        CHECK (hora_fin > hora_inicio),
 
     CONSTRAINT fk_horario_grupo
         FOREIGN KEY (id_grupo)
-        REFERENCES grupos(id_grupo),
-
-    CONSTRAINT chk_horario
-        CHECK (hora_fin > hora_inicio)
+        REFERENCES grupos(id_grupo)
 );
 
 
@@ -148,9 +171,13 @@ CREATE TABLE horario_grupo (
 
 CREATE TABLE inscripcion (
     id_inscripcion INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     id_alumno INTEGER NOT NULL,
+
     id_grupo INTEGER NOT NULL,
+
     fecha_inscripcion DATE NOT NULL DEFAULT CURRENT_DATE,
+
     estado VARCHAR(50) NOT NULL DEFAULT 'Activo',
 
     CONSTRAINT fk_inscripcion_alumno
@@ -159,7 +186,10 @@ CREATE TABLE inscripcion (
 
     CONSTRAINT fk_inscripcion_grupo
         FOREIGN KEY (id_grupo)
-        REFERENCES grupos(id_grupo)
+        REFERENCES grupos(id_grupo),
+
+    CONSTRAINT uq_inscripcion_alumno_grupo
+        UNIQUE (id_alumno, id_grupo)
 );
 
 
@@ -169,7 +199,9 @@ CREATE TABLE inscripcion (
 
 CREATE TABLE tipos_clase (
     id_tipo_clase INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     tipo VARCHAR(50) NOT NULL UNIQUE,
+
     descripcion TEXT
 );
 
@@ -180,8 +212,11 @@ CREATE TABLE tipos_clase (
 
 CREATE TABLE tipos_credito (
     id_tipo_credito INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     nombre VARCHAR(50) NOT NULL UNIQUE,
+
     descripcion TEXT,
+
     activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -192,11 +227,22 @@ CREATE TABLE tipos_credito (
 
 CREATE TABLE paquetes_creditos (
     id_paquete INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
     id_tipo_credito INTEGER NOT NULL,
+
     nombre VARCHAR(100) NOT NULL,
-    cantidad_creditos INTEGER NOT NULL CHECK (cantidad_creditos > 0),
-    precio NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
+
+    cantidad_creditos INTEGER NOT NULL,
+
+    precio NUMERIC(10,2) NOT NULL,
+
     activo BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT chk_paquete_creditos
+        CHECK (cantidad_creditos > 0),
+
+    CONSTRAINT chk_paquete_precio
+        CHECK (precio >= 0),
 
     CONSTRAINT fk_paquetes_tipo_credito
         FOREIGN KEY (id_tipo_credito)
@@ -212,13 +258,19 @@ CREATE TABLE clase (
     id_clase INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     id_grupo INTEGER,
+
     id_tipo_clase INTEGER NOT NULL,
 
     fecha DATE NOT NULL,
+
     hora_inicio TIME NOT NULL,
+
     hora_fin TIME NOT NULL,
 
     estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente',
+
+    CONSTRAINT chk_clase_horario
+        CHECK (hora_fin > hora_inicio),
 
     CONSTRAINT fk_clase_grupo
         FOREIGN KEY (id_grupo)
@@ -226,10 +278,7 @@ CREATE TABLE clase (
 
     CONSTRAINT fk_clase_tipo
         FOREIGN KEY (id_tipo_clase)
-        REFERENCES tipos_clase(id_tipo_clase),
-
-    CONSTRAINT chk_clase_horario
-        CHECK (hora_fin > hora_inicio)
+        REFERENCES tipos_clase(id_tipo_clase)
 );
 
 
@@ -241,17 +290,22 @@ CREATE TABLE compra_creditos (
     id_compra INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     id_alumno INTEGER NOT NULL,
+
     id_paquete INTEGER NOT NULL,
 
-    cantidad_creditos INTEGER NOT NULL
-        CHECK (cantidad_creditos > 0),
+    cantidad_creditos INTEGER NOT NULL,
 
-    precio_pagado NUMERIC(10,2) NOT NULL
-        CHECK (precio_pagado >= 0),
+    precio_pagado NUMERIC(10,2) NOT NULL,
 
     fecha_compra TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     estado VARCHAR(50) NOT NULL DEFAULT 'Pagado',
+
+    CONSTRAINT chk_compra_creditos
+        CHECK (cantidad_creditos > 0),
+
+    CONSTRAINT chk_compra_precio
+        CHECK (precio_pagado >= 0),
 
     CONSTRAINT fk_compra_alumno
         FOREIGN KEY (id_alumno)
@@ -271,7 +325,9 @@ CREATE TABLE movimiento_credito (
     id_movimiento INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     id_alumno INTEGER NOT NULL,
+
     id_tipo_credito INTEGER NOT NULL,
+
     id_compra INTEGER,
 
     cantidad INTEGER NOT NULL,
@@ -294,6 +350,9 @@ CREATE TABLE movimiento_credito (
         FOREIGN KEY (id_compra)
         REFERENCES compra_creditos(id_compra),
 
+    CONSTRAINT chk_movimiento_cantidad
+        CHECK (cantidad <> 0),
+
     CONSTRAINT chk_movimiento_tipo
         CHECK (
             tipo IN (
@@ -314,7 +373,9 @@ CREATE TABLE reserva (
     id_reserva INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     id_alumno INTEGER NOT NULL,
+
     id_clase INTEGER NOT NULL,
+
     id_movimiento_credito INTEGER,
 
     fecha_reserva TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -357,6 +418,7 @@ CREATE TABLE asistencia (
     id_asistencia INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     id_alumno INTEGER NOT NULL,
+
     id_clase INTEGER NOT NULL,
 
     estado VARCHAR(50) NOT NULL,
@@ -384,9 +446,11 @@ CREATE TABLE reglas_pago_profesor (
     id_regla INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     porcentaje_profesor NUMERIC(5,2) NOT NULL,
+
     porcentaje_academia NUMERIC(5,2) NOT NULL,
 
     fecha_inicio DATE NOT NULL,
+
     fecha_fin DATE,
 
     activo BOOLEAN NOT NULL DEFAULT TRUE,
@@ -414,23 +478,32 @@ CREATE TABLE liquidacion_profesor (
     id_liquidacion INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     id_profesor INTEGER NOT NULL,
+
     id_reserva INTEGER NOT NULL,
 
-    monto_base NUMERIC(10,2) NOT NULL
-        CHECK (monto_base >= 0),
+    monto_base NUMERIC(10,2) NOT NULL,
 
-    porcentaje NUMERIC(5,2) NOT NULL
-        CHECK (porcentaje >= 0),
+    porcentaje NUMERIC(5,2) NOT NULL,
 
-    monto_profesor NUMERIC(10,2) NOT NULL
-        CHECK (monto_profesor >= 0),
+    monto_profesor NUMERIC(10,2) NOT NULL,
 
-    monto_academia NUMERIC(10,2) NOT NULL
-        CHECK (monto_academia >= 0),
+    monto_academia NUMERIC(10,2) NOT NULL,
 
     fecha_generacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',
+
+    CONSTRAINT chk_liquidacion_monto_base
+        CHECK (monto_base >= 0),
+
+    CONSTRAINT chk_liquidacion_porcentaje
+        CHECK (porcentaje >= 0),
+
+    CONSTRAINT chk_liquidacion_profesor
+        CHECK (monto_profesor >= 0),
+
+    CONSTRAINT chk_liquidacion_academia
+        CHECK (monto_academia >= 0),
 
     CONSTRAINT fk_liquidacion_profesor
         FOREIGN KEY (id_profesor)
@@ -464,6 +537,7 @@ CREATE TABLE periodo_evaluacion (
     periodo VARCHAR(100) NOT NULL,
 
     fecha_inicio DATE NOT NULL,
+
     fecha_fin DATE NOT NULL,
 
     CONSTRAINT chk_periodo_fechas
@@ -479,8 +553,11 @@ CREATE TABLE boletin (
     id_boletin INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     id_alumno INTEGER NOT NULL,
+
     id_grupo INTEGER NOT NULL,
+
     id_profesor INTEGER NOT NULL,
+
     id_periodo INTEGER NOT NULL,
 
     anio INTEGER NOT NULL,
@@ -518,12 +595,14 @@ CREATE TABLE cuota (
 
     mes_anio VARCHAR(20) NOT NULL,
 
-    monto NUMERIC(10,2) NOT NULL
-        CHECK (monto >= 0),
+    monto NUMERIC(10,2) NOT NULL,
 
     vencimiento DATE NOT NULL,
 
     estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente',
+
+    CONSTRAINT chk_cuota_monto
+        CHECK (monto >= 0),
 
     CONSTRAINT fk_cuota_alumno
         FOREIGN KEY (id_alumno)
@@ -542,8 +621,7 @@ CREATE TABLE pago (
 
     id_inscripcion INTEGER,
 
-    monto NUMERIC(10,2) NOT NULL
-        CHECK (monto >= 0),
+    monto NUMERIC(10,2) NOT NULL,
 
     fecha_pago TIMESTAMP,
 
@@ -554,6 +632,9 @@ CREATE TABLE pago (
     metodo_pago VARCHAR(50),
 
     detalle TEXT,
+
+    CONSTRAINT chk_pago_monto
+        CHECK (monto >= 0),
 
     CONSTRAINT fk_pago_cuota
         FOREIGN KEY (id_cuota)
@@ -575,6 +656,7 @@ CREATE TABLE persona_autorizada (
     id_alumno INTEGER NOT NULL,
 
     nombre VARCHAR(100) NOT NULL,
+
     apellido VARCHAR(100) NOT NULL,
 
     dni VARCHAR(50) NOT NULL,
@@ -597,7 +679,9 @@ CREATE TABLE retiro_menor (
     id_retiro INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     id_alumno INTEGER NOT NULL,
+
     id_autorizada INTEGER NOT NULL,
+
     id_profesor INTEGER NOT NULL,
 
     fecha_hora TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -620,45 +704,68 @@ CREATE TABLE retiro_menor (
 -- ÍNDICES
 -- ============================================================
 
+CREATE INDEX idx_users_email
+ON users(email);
+
+CREATE INDEX idx_users_rol
+ON users(id_rol);
+
 CREATE INDEX idx_inscripcion_alumno
-    ON inscripcion(id_alumno);
+ON inscripcion(id_alumno);
 
 CREATE INDEX idx_inscripcion_grupo
-    ON inscripcion(id_grupo);
+ON inscripcion(id_grupo);
+
+CREATE INDEX idx_horario_grupo
+ON horario_grupo(id_grupo);
 
 CREATE INDEX idx_clase_fecha
-    ON clase(fecha);
+ON clase(fecha);
 
 CREATE INDEX idx_clase_grupo
-    ON clase(id_grupo);
+ON clase(id_grupo);
 
 CREATE INDEX idx_asistencia_clase
-    ON asistencia(id_clase);
+ON asistencia(id_clase);
 
 CREATE INDEX idx_asistencia_alumno
-    ON asistencia(id_alumno);
+ON asistencia(id_alumno);
 
 CREATE INDEX idx_pago_estado
-    ON pago(estado);
+ON pago(estado);
+
+CREATE INDEX idx_pago_cuota
+ON pago(id_cuota);
 
 CREATE INDEX idx_compra_creditos_alumno
-    ON compra_creditos(id_alumno);
+ON compra_creditos(id_alumno);
 
 CREATE INDEX idx_movimiento_credito_alumno
-    ON movimiento_credito(id_alumno);
+ON movimiento_credito(id_alumno);
+
+CREATE INDEX idx_movimiento_credito_tipo
+ON movimiento_credito(id_tipo_credito);
 
 CREATE INDEX idx_reserva_alumno
-    ON reserva(id_alumno);
+ON reserva(id_alumno);
 
 CREATE INDEX idx_reserva_clase
-    ON reserva(id_clase);
+ON reserva(id_clase);
 
 CREATE INDEX idx_liquidacion_profesor
-    ON liquidacion_profesor(id_profesor);
+ON liquidacion_profesor(id_profesor);
+
+CREATE INDEX idx_liquidacion_estado
+ON liquidacion_profesor(estado);
 
 
 -- ============================================================
 -- DATOS INICIALES
+-- ============================================================
+
+
+-- ============================================================
+-- ROLES
 -- ============================================================
 
 INSERT INTO roles (rol)
@@ -668,33 +775,53 @@ VALUES
     ('Profesor');
 
 
-INSERT INTO tipos_clase (tipo, descripcion)
+-- ============================================================
+-- TIPOS DE CLASE
+-- ============================================================
+
+INSERT INTO tipos_clase (
+    tipo,
+    descripcion
+)
 VALUES
-    (
-        'Libre',
-        'Clase libre a la que el alumno puede reservar individualmente'
-    ),
-    (
-        'Coreografica',
-        'Clase perteneciente a un grupo coreográfico'
-    ),
-    (
-        'Grupo',
-        'Clase correspondiente a un grupo regular'
-    );
+(
+    'Libre',
+    'Clase libre a la que el alumno puede reservar individualmente'
+),
+(
+    'Coreografica',
+    'Clase perteneciente a un grupo coreográfico'
+),
+(
+    'Grupo',
+    'Clase correspondiente a un grupo regular'
+);
 
 
-INSERT INTO tipos_credito (nombre, descripcion)
+-- ============================================================
+-- TIPOS DE CRÉDITO
+-- ============================================================
+
+INSERT INTO tipos_credito (
+    nombre,
+    descripcion
+)
 VALUES
-    (
-        'Libre',
-        'Créditos utilizables en clases libres'
-    ),
-    (
-        'Coreografico',
-        'Créditos utilizables en clases coreográficas'
-    );
+(
+    'Libre',
+    'Créditos utilizables en clases libres'
+),
+(
+    'Coreografico',
+    'Créditos utilizables en clases coreográficas'
+);
 
+
+-- ============================================================
+-- PAQUETES DE CRÉDITOS
+-- ============================================================
+
+-- CLASES LIBRES
 
 INSERT INTO paquetes_creditos (
     id_tipo_credito,
@@ -703,19 +830,46 @@ INSERT INTO paquetes_creditos (
     precio
 )
 VALUES
-    (
-        1,
-        'Clase Libre Individual',
-        1,
-        5000
-    ),
-    (
-        1,
-        'Pack 15 Clases Libres',
-        15,
-        50000
-    );
+(
+    1,
+    'Clase Libre Individual',
+    1,
+    5000
+),
+(
+    1,
+    'Pack 15 Clases Libres',
+    15,
+    50000
+);
 
+
+-- CLASES COREOGRÁFICAS
+
+INSERT INTO paquetes_creditos (
+    id_tipo_credito,
+    nombre,
+    cantidad_creditos,
+    precio
+)
+VALUES
+(
+    2,
+    'Clase Coreográfica Individual',
+    1,
+    5000
+),
+(
+    2,
+    'Pack 15 Clases Coreográficas',
+    15,
+    50000
+);
+
+
+-- ============================================================
+-- REGLA DE PAGO A PROFESORES
+-- ============================================================
 
 INSERT INTO reglas_pago_profesor (
     porcentaje_profesor,
@@ -730,10 +884,651 @@ VALUES (
 
 
 -- ============================================================
--- VERIFICACIÓN
+-- PROCEDURE:
+-- COMPRAR CRÉDITOS
 -- ============================================================
 
-SELECT table_name
+CREATE OR REPLACE PROCEDURE comprar_creditos (
+    p_id_alumno INTEGER,
+    p_id_paquete INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+
+    v_tipo_credito INTEGER;
+
+    v_cantidad_creditos INTEGER;
+
+    v_precio NUMERIC(10,2);
+
+    v_id_compra INTEGER;
+
+BEGIN
+
+    -- ========================================================
+    -- Buscar paquete
+    -- ========================================================
+
+    SELECT
+        id_tipo_credito,
+        cantidad_creditos,
+        precio
+
+    INTO
+        v_tipo_credito,
+        v_cantidad_creditos,
+        v_precio
+
+    FROM paquetes_creditos
+
+    WHERE id_paquete = p_id_paquete
+      AND activo = TRUE;
+
+
+    IF NOT FOUND THEN
+
+        RAISE EXCEPTION
+            'El paquete de créditos no existe o está inactivo';
+
+    END IF;
+
+
+    -- ========================================================
+    -- Verificar alumno
+    -- ========================================================
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM alumnos
+        WHERE id_alumno = p_id_alumno
+    ) THEN
+
+        RAISE EXCEPTION
+            'El alumno % no existe',
+            p_id_alumno;
+
+    END IF;
+
+
+    -- ========================================================
+    -- Registrar compra
+    -- ========================================================
+
+    INSERT INTO compra_creditos (
+        id_alumno,
+        id_paquete,
+        cantidad_creditos,
+        precio_pagado,
+        estado
+    )
+    VALUES (
+        p_id_alumno,
+        p_id_paquete,
+        v_cantidad_creditos,
+        v_precio,
+        'Pagado'
+    )
+
+    RETURNING id_compra
+    INTO v_id_compra;
+
+
+    -- ========================================================
+    -- Registrar movimiento de créditos
+    -- ========================================================
+
+    INSERT INTO movimiento_credito (
+        id_alumno,
+        id_tipo_credito,
+        id_compra,
+        cantidad,
+        tipo,
+        descripcion
+    )
+    VALUES (
+        p_id_alumno,
+        v_tipo_credito,
+        v_id_compra,
+        v_cantidad_creditos,
+        'COMPRA',
+        'Compra de paquete de créditos'
+    );
+
+
+END;
+$$;
+
+
+-- ============================================================
+-- PROCEDURE:
+-- RESERVAR CLASE Y CONSUMIR CRÉDITO
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE reservar_clase (
+    p_id_alumno INTEGER,
+    p_id_clase INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+
+    v_tipo_clase VARCHAR(50);
+
+    v_tipo_credito INTEGER;
+
+    v_creditos_disponibles INTEGER;
+
+    v_id_movimiento INTEGER;
+
+    v_id_reserva INTEGER;
+
+BEGIN
+
+    -- ========================================================
+    -- Buscar tipo de clase
+    -- ========================================================
+
+    SELECT
+        tc.tipo
+
+    INTO
+        v_tipo_clase
+
+    FROM clase c
+
+    INNER JOIN tipos_clase tc
+        ON tc.id_tipo_clase = c.id_tipo_clase
+
+    WHERE c.id_clase = p_id_clase;
+
+
+    IF NOT FOUND THEN
+
+        RAISE EXCEPTION
+            'La clase % no existe',
+            p_id_clase;
+
+    END IF;
+
+
+    -- ========================================================
+    -- Determinar tipo de crédito
+    -- ========================================================
+
+    IF v_tipo_clase = 'Libre' THEN
+
+        SELECT id_tipo_credito
+        INTO v_tipo_credito
+
+        FROM tipos_credito
+
+        WHERE nombre = 'Libre';
+
+
+    ELSIF v_tipo_clase IN ('Coreografica', 'Grupo') THEN
+
+        SELECT id_tipo_credito
+        INTO v_tipo_credito
+
+        FROM tipos_credito
+
+        WHERE nombre = 'Coreografico';
+
+
+    ELSE
+
+        RAISE EXCEPTION
+            'Tipo de clase no soportado: %',
+            v_tipo_clase;
+
+    END IF;
+
+
+    -- ========================================================
+    -- Verificar que no exista reserva
+    -- ========================================================
+
+    IF EXISTS (
+        SELECT 1
+        FROM reserva
+        WHERE id_alumno = p_id_alumno
+          AND id_clase = p_id_clase
+          AND estado <> 'Cancelada'
+    ) THEN
+
+        RAISE EXCEPTION
+            'El alumno ya está reservado en esta clase';
+
+    END IF;
+
+
+    -- ========================================================
+    -- Buscar créditos disponibles
+    -- ========================================================
+
+    SELECT
+        COALESCE(
+            SUM(cantidad),
+            0
+        )
+
+    INTO
+        v_creditos_disponibles
+
+    FROM movimiento_credito
+
+    WHERE id_alumno = p_id_alumno
+
+      AND id_tipo_credito = v_tipo_credito;
+
+
+    -- ========================================================
+    -- Verificar saldo
+    -- ========================================================
+
+    IF v_creditos_disponibles <= 0 THEN
+
+        RAISE EXCEPTION
+            'El alumno no tiene créditos disponibles';
+
+    END IF;
+
+
+    -- ========================================================
+    -- Consumir crédito
+    -- ========================================================
+
+    INSERT INTO movimiento_credito (
+        id_alumno,
+        id_tipo_credito,
+        cantidad,
+        tipo,
+        descripcion
+    )
+    VALUES (
+        p_id_alumno,
+        v_tipo_credito,
+        -1,
+        'CONSUMO',
+        'Consumo de crédito por reserva de clase'
+    )
+
+    RETURNING id_movimiento
+    INTO v_id_movimiento;
+
+
+    -- ========================================================
+    -- Crear reserva
+    -- ========================================================
+
+    INSERT INTO reserva (
+        id_alumno,
+        id_clase,
+        id_movimiento_credito,
+        estado
+    )
+    VALUES (
+        p_id_alumno,
+        p_id_clase,
+        v_id_movimiento,
+        'Reservada'
+    )
+
+    RETURNING id_reserva
+    INTO v_id_reserva;
+
+
+END;
+$$;
+
+
+-- ============================================================
+-- PROCEDURE:
+-- CANCELAR RESERVA Y DEVOLVER CRÉDITO
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE cancelar_reserva (
+    p_id_reserva INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+
+    v_id_alumno INTEGER;
+
+    v_id_tipo_credito INTEGER;
+
+BEGIN
+
+    -- ========================================================
+    -- Buscar reserva
+    -- ========================================================
+
+    SELECT
+        r.id_alumno,
+        mc.id_tipo_credito
+
+    INTO
+        v_id_alumno,
+        v_id_tipo_credito
+
+    FROM reserva r
+
+    INNER JOIN movimiento_credito mc
+        ON mc.id_movimiento = r.id_movimiento_credito
+
+    WHERE r.id_reserva = p_id_reserva
+
+      AND r.estado <> 'Cancelada';
+
+
+    IF NOT FOUND THEN
+
+        RAISE EXCEPTION
+            'La reserva no existe o ya fue cancelada';
+
+    END IF;
+
+
+    -- ========================================================
+    -- Cancelar reserva
+    -- ========================================================
+
+    UPDATE reserva
+
+    SET estado = 'Cancelada'
+
+    WHERE id_reserva = p_id_reserva;
+
+
+    -- ========================================================
+    -- Devolver crédito
+    -- ========================================================
+
+    INSERT INTO movimiento_credito (
+        id_alumno,
+        id_tipo_credito,
+        cantidad,
+        tipo,
+        descripcion
+    )
+    VALUES (
+        v_id_alumno,
+        v_id_tipo_credito,
+        1,
+        'DEVOLUCION',
+        'Devolución de crédito por cancelación de reserva'
+    );
+
+
+END;
+$$;
+
+
+-- ============================================================
+-- PROCEDURE:
+-- CREAR INSCRIPCIÓN A GRUPO COREOGRÁFICO
+-- ============================================================
+
+CREATE OR REPLACE PROCEDURE crear_inscripcion (
+    p_id_alumno INTEGER,
+    p_id_grupo INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+
+    v_id_tipo_credito INTEGER;
+
+    v_creditos_disponibles INTEGER;
+
+BEGIN
+
+    -- ========================================================
+    -- Verificar grupo
+    -- ========================================================
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM grupos
+        WHERE id_grupo = p_id_grupo
+          AND activo = TRUE
+    ) THEN
+
+        RAISE EXCEPTION
+            'El grupo % no existe o está inactivo',
+            p_id_grupo;
+
+    END IF;
+
+
+    -- ========================================================
+    -- Verificar que no esté inscripto
+    -- ========================================================
+
+    IF EXISTS (
+        SELECT 1
+        FROM inscripcion
+        WHERE id_alumno = p_id_alumno
+          AND id_grupo = p_id_grupo
+          AND estado = 'Activo'
+    ) THEN
+
+        RAISE EXCEPTION
+            'El alumno ya está inscripto en este grupo';
+
+    END IF;
+
+
+    -- ========================================================
+    -- Buscar tipo de crédito
+    -- ========================================================
+
+    SELECT id_tipo_credito
+
+    INTO v_id_tipo_credito
+
+    FROM tipos_credito
+
+    WHERE nombre = 'Coreografico';
+
+
+    -- ========================================================
+    -- Verificar créditos
+    -- ========================================================
+
+    SELECT
+        COALESCE(
+            SUM(cantidad),
+            0
+        )
+
+    INTO
+        v_creditos_disponibles
+
+    FROM movimiento_credito
+
+    WHERE id_alumno = p_id_alumno
+      AND id_tipo_credito = v_id_tipo_credito;
+
+
+    IF v_creditos_disponibles <= 0 THEN
+
+        RAISE EXCEPTION
+            'El alumno no tiene créditos coreográficos disponibles';
+
+    END IF;
+
+
+    -- ========================================================
+    -- Crear inscripción
+    -- ========================================================
+
+    INSERT INTO inscripcion (
+        id_alumno,
+        id_grupo,
+        estado
+    )
+    VALUES (
+        p_id_alumno,
+        p_id_grupo,
+        'Activo'
+    );
+
+
+    -- ========================================================
+    -- Consumir crédito
+    -- ========================================================
+
+    INSERT INTO movimiento_credito (
+        id_alumno,
+        id_tipo_credito,
+        cantidad,
+        tipo,
+        descripcion
+    )
+    VALUES (
+        p_id_alumno,
+        v_id_tipo_credito,
+        -1,
+        'CONSUMO',
+        'Consumo de crédito por inscripción a grupo coreográfico'
+    );
+
+END;
+$$;
+
+
+-- ============================================================
+-- FUNCIÓN:
+-- CONSULTAR SALDO DE CRÉDITOS DE UN ALUMNO
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION obtener_creditos_alumno (
+    p_id_alumno INTEGER
+)
+RETURNS TABLE (
+    id_tipo_credito INTEGER,
+    tipo_credito VARCHAR(50),
+    creditos_disponibles BIGINT
+)
+LANGUAGE sql
+AS $$
+    SELECT
+        tc.id_tipo_credito,
+        tc.nombre,
+        COALESCE(
+            SUM(mc.cantidad),
+            0
+        ) AS creditos_disponibles
+
+    FROM tipos_credito tc
+
+    LEFT JOIN movimiento_credito mc
+        ON mc.id_tipo_credito = tc.id_tipo_credito
+        AND mc.id_alumno = p_id_alumno
+
+    WHERE tc.activo = TRUE
+
+    GROUP BY
+        tc.id_tipo_credito,
+        tc.nombre
+
+    ORDER BY
+        tc.id_tipo_credito;
+$$;
+
+
+-- ============================================================
+-- FUNCIÓN:
+-- OBTENER DISCIPLINAS
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION obtenerDisciplinas()
+RETURNS TABLE (
+    id_disciplina INTEGER,
+    disciplina VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    RETURN QUERY
+
+    SELECT
+        d.id_disciplina,
+        d.disciplina
+
+    FROM disciplinas d
+
+    ORDER BY d.id_disciplina;
+
+END;
+$$;
+
+
+-- ============================================================
+-- VERIFICACIÓN DE TABLAS
+-- ============================================================
+
+SELECT
+    table_name
+
 FROM information_schema.tables
+
 WHERE table_schema = 'public'
+
 ORDER BY table_name;
+
+
+-- ============================================================
+-- VERIFICACIÓN DE ROLES
+-- ============================================================
+
+SELECT *
+FROM roles;
+
+
+-- ============================================================
+-- VERIFICACIÓN DE TIPOS DE CLASE
+-- ============================================================
+
+SELECT *
+FROM tipos_clase;
+
+
+-- ============================================================
+-- VERIFICACIÓN DE TIPOS DE CRÉDITO
+-- ============================================================
+
+SELECT *
+FROM tipos_credito;
+
+
+-- ============================================================
+-- VERIFICACIÓN DE PAQUETES
+-- ============================================================
+
+SELECT
+    pc.id_paquete,
+    tc.nombre AS tipo_credito,
+    pc.nombre AS paquete,
+    pc.cantidad_creditos,
+    pc.precio,
+    pc.activo
+
+FROM paquetes_creditos pc
+
+INNER JOIN tipos_credito tc
+    ON tc.id_tipo_credito = pc.id_tipo_credito
+
+ORDER BY pc.id_paquete;
+
+
+-- ============================================================
+-- VERIFICACIÓN DE REGLAS DE PROFESORES
+-- ============================================================
+
+SELECT *
+FROM reglas_pago_profesor;
