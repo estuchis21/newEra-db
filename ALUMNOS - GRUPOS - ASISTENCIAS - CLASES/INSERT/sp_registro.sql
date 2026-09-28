@@ -1,15 +1,15 @@
-CREATE OR REPLACE PROCEDURE registroalumno(
-    IN p_alumno alumno_input,
-    IN p_alumnos alumnos_type,
-    IN p_profesor profesorestype,
-    INOUT p_id_usuario INTEGER
+CREATE OR REPLACE PROCEDURE public.registroalumno(
+    data_alumnos alumno_input,
+    p_alumnos_type alumnos_type DEFAULT NULL,
+    p_profesores_type profesorestype DEFAULT NULL,
+    p_id_usuario_creador integer DEFAULT NULL
 )
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_id_usuario INTEGER;
+    v_id_usuario INT;
 BEGIN
-
+    -- 1. Registrar usuario en la tabla 'users'
     INSERT INTO users (
         nombre,
         apellido,
@@ -21,61 +21,34 @@ BEGIN
         id_rol
     )
     VALUES (
-        p_alumno.nombre,
-        p_alumno.apellido,
-        p_alumno.dni,
-        p_alumno.email,
-        p_alumno.contrasena,
-        p_alumno.username,
-        p_alumno.celular,
-        p_alumno.id_rol
+        data_alumnos.nombre,
+        data_alumnos.apellido,
+        data_alumnos.dni,
+        data_alumnos.email,
+        data_alumnos.contrasena,
+        data_alumnos.username,
+        data_alumnos.celular,
+        data_alumnos.id_rol
     )
-    RETURNING id_usuario
-    INTO v_id_usuario;
+    RETURNING id_usuario INTO v_id_usuario;
 
-
-    -- =====================================
-    -- ALUMNO
-    -- =====================================
-
-    IF p_alumno.id_rol = 2 THEN
-
-        INSERT INTO alumnos (
-            id_usuario,
-            es_menor
-        )
-        VALUES (
-            v_id_usuario,
-            COALESCE(
-                p_alumnos.es_menor,
-                FALSE
-            )
-        );
-
+    -- 2. Evaluar el id_rol e insertar según corresponda
+    IF data_alumnos.id_rol = 2 THEN
+        -- Perfil Alumno
+        INSERT INTO alumnos (id_usuario)
+        VALUES (v_id_usuario)
+        ON CONFLICT DO NOTHING;
+        
+    ELSIF data_alumnos.id_rol = 3 THEN
+        -- Perfil Profesor
+        INSERT INTO profesores (id_usuario)
+        VALUES (v_id_usuario)
+        ON CONFLICT DO NOTHING;
+        
     END IF;
-
-
-    -- =====================================
-    -- PROFESOR
-    -- =====================================
-
-    IF p_alumno.id_rol = 3 THEN
-
-        INSERT INTO profesores (
-            id_usuario
-        )
-        VALUES (
-            v_id_usuario
-        );
-
-    END IF;
-
-
-    -- =====================================
-    -- DEVOLVER ID
-    -- =====================================
-
-    p_id_usuario := v_id_usuario;
 
 END;
 $$;
+
+-- 3. Asignar propiedad a academia_backend
+ALTER PROCEDURE public.registroalumno(alumno_input, alumnos_type, profesorestype, integer) OWNER TO academia_backend;

@@ -1,12 +1,12 @@
-CREATE OR REPLACE FUNCTION historial_asistencia_alumno (
-    p_id_alumno INT
+CREATE OR REPLACE FUNCTION historial_asistencia_alumno(
+    p_id_alumno INTEGER
 )
 RETURNS TABLE (
     disciplina VARCHAR,
     nombre VARCHAR,
     apellido VARCHAR,
-    tipo_clase VARCHAR,
-    fecha_clase DATE,
+    tipo VARCHAR,
+    fecha DATE,
     hora_inicio TIME,
     hora_fin TIME,
     estado VARCHAR,
